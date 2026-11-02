@@ -1,0 +1,6 @@
+[submodule "third_party/SwiftTerm"]
+	path = third_party/SwiftTerm
+	url = https://github.com/migueldeicaza/SwiftTerm.git
+[submodule "third_party/libssh2"]
+	path = third_party/libssh2
+	url = https://github.com/libssh2/libssh2.git

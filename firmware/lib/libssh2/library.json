@@ -1,0 +1,12 @@
+{
+  "name": "libssh2",
+  "version": "1.11.1",
+  "description": "libssh2 (BSD-3-Clause, third_party/libssh2 submodule) on the Arduino core's mbedTLS, built for the Tab5.",
+  "license": "BSD-3-Clause",
+  "build": {
+    "srcDir": "../../../third_party/libssh2/src",
+    "includeDir": "../../../third_party/libssh2/include",
+    "srcFilter": ["+<*.c>", "-<openssl.c>", "-<libgcrypt.c>", "-<mbedtls.c>", "-<os400qc3.c>", "-<wincng.c>", "-<agent_win.c>", "-<agent.c>"],
+    "flags": ["-DHAVE_CONFIG_H", "-DLIBSSH2_MBEDTLS", "-Iconfig", "-Wno-error", "-Wno-unused-function", "-Wno-unused-variable"]
+  }
+}

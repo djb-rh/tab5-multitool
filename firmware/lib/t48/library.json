@@ -1,0 +1,29 @@
+{
+  "name": "t48",
+  "version": "1.4.0",
+  "description": "T48 for Tab5 (GPL-3.0-or-later, third_party/t48-for-tab5): the XGecu T48 and One ROM programmer, run as the launcher's T48 app. minipro inside it is GPL-3 too.",
+  "license": "GPL-3.0-or-later",
+  "build": {
+    "srcDir": "../../../third_party/t48-for-tab5",
+    "includeDir": "../../../third_party/t48-for-tab5/src/app",
+    "srcFilter": [
+      "+<src/app/>",
+      "-<src/app/main.cpp>",
+      "+<src/core/>",
+      "+<third_party/minipro/src/*.c>",
+      "-<third_party/minipro/src/main.c>",
+      "-<third_party/minipro/src/usb_nix.c>",
+      "-<third_party/minipro/src/usb_win.c>"
+    ],
+    "flags": [
+      "-DSHARE_INSTDIR=\\\"/sdcard/burner/sel\\\"",
+      "-I../../../third_party/t48-for-tab5/include",
+      "-Wno-error",
+      "-Wno-unused-variable",
+      "-Wno-unused-function",
+      "-Dbase64_init_decodestate=minipro_base64_init_decodestate",
+      "-Dbase64_decode_value=minipro_base64_decode_value",
+      "-Dbase64_decode_block=minipro_base64_decode_block"
+    ]
+  }
+}
