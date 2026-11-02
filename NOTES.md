@@ -9,8 +9,9 @@ Newest first. PLAN.md is the plan; this is what was actually found.
   to burner.cpp (burner::setup/loop; main.cpp there is a two-line wrapper),
   and host.h lets a launcher add a Home button and pass its Wi-Fi network
   (used only while the burner has none saved). Here it is lib/t48 over
-  `third_party/t48-for-tab5`, for now a SYMLINK to ../../tab5-burner; make it a
-  submodule once that branch is pushed. tools/build_t48.py builds its Rust part.
+  `third_party/t48-for-tab5`, a submodule tracking djb-rh/t48-for-tab5 branch
+  launcher-app (edit in ~/Developer/tab5-burner, push, then bump the submodule).
+  tools/build_t48.py builds its Rust part.
   - It starts from a clean boot (its own USB host, SD, Wi-Fi, web server,
     keyboard driver): setup() checks the remembered app before M5.begin and
     hands the whole boot to burner::setup(). Home restarts to the home screen.

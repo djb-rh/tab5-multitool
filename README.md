@@ -96,5 +96,7 @@ tools/flash.py app --wait
 `test/run.sh` tests the macro parser, `test/rpn_test.sh` the calculator,
 `test/units_test.sh` the unit tables and parser, `test/term_test.sh` SwiftTerm.
 
-The T48 app is built from `third_party/t48-for-tab5` (`firmware/lib/t48`); its
+The T48 app is built from the `third_party/t48-for-tab5` submodule
+(`firmware/lib/t48`), which has its own minipro submodule, so clone with
+`git clone --recursive` or run `git submodule update --init --recursive`. Its
 Rust part needs rustup with the `riscv32imafc-unknown-none-elf` target.
