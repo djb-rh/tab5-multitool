@@ -11,6 +11,13 @@ apps on one home screen:
 | Units | unit conversion, 24 kinds; type "5 ft 3 in to cm" or "100 F in C" |
 | T48 + One ROM | [T48 for Tab5](https://github.com/djb-rh/t48-for-tab5): program ROMs with an XGecu T48 or a One ROM |
 
+![The home screen](docs/shots/home.png)
+
+**Install** from a desktop Chrome or Edge with the
+[web installer](https://djb-rh.github.io/tab5-multitool/), then tap **Wi-Fi**
+on the home screen to choose a network (the Terminal's SSH and the macro web
+editor need one; T48 uses it too).
+
 The keyboard and mouse part is also a library (`src/t5m`), so other Tab5
 sketches can use any part of it.
 
@@ -18,7 +25,7 @@ sketches can use any part of it.
 T48 for Tab5, which is GPL-3.0-or-later (it contains minipro), so the
 firmware as built here, with it linked in, is distributed under GPL-3.0-or-later.
 
-**Status: early development.** Everything here runs on a Tab5; see NOTES.md for what has been checked.
+**Status: early (v0.1).** Everything here runs on a Tab5; see NOTES.md for what has been checked.
 See [NOTES.md](NOTES.md) and [PLAN.md](PLAN.md).
 
 ## Library
@@ -86,6 +93,12 @@ The full step syntax is at the top of [src/t5m/Macro.h](src/t5m/Macro.h).
 ```bash
 cd firmware && ~/.platformio/penv/bin/pio run -e app
 ```
+
+The `app` build is for development: it waits 3 s on USB-Serial-JTAG at boot,
+and if `firmware/include/secrets.h` exists (copy `secrets.h.example`) it joins
+that Wi-Fi network while none is saved on the Tab5. The `release` build does
+neither. `tools/release.sh v0.1.0` builds the release `.bin`, the T48 SD card
+zip and the web installer site (`site/`, served from the gh-pages branch).
 
 ```bash
 tools/flash.py app --wait

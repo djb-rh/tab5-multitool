@@ -2,6 +2,20 @@
 
 Newest first. PLAN.md is the plan; this is what was actually found.
 
+## 2026-11-02 (later): Wi-Fi screen, public repo, web installer
+- Public at github.com/djb-rh/tab5-multitool (MAC and LAN IP scrubbed from NOTES
+  before the first push). Web installer: tools/release.sh -> site/ on gh-pages.
+- Wi-Fi screen (wifi_setup.cpp), from the home screen's Wi-Fi button: async
+  scan, pick a network, password on the clip-on or on-screen keyboard, Other
+  network for hidden ones, Forget, on/off. Saved in NVS "wifi" (ssid, pass);
+  with none saved the dev build falls back to secrets.h. The release env sets
+  T5M_NO_SECRETS, and release.sh refuses a .bin that contains the secrets.
+- A scan can't start while a join is under way (scanNetworks returns FAILED):
+  it is retried every 2 s for 20 s. Checked on the Tab5: scan, Other network,
+  failed join message, Forget back to the secrets.h network.
+- Not checked: the on-screen keyboard here (the clip-on keyboard was attached),
+  and a real join with a saved password (not typed by Claude).
+
 ## 2026-11-02 (unattended): T48, Calculator, Units
 
 - **T48 + One ROM app.** T48 for Tab5 (~/Developer/tab5-burner, branch

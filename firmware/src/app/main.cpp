@@ -46,10 +46,7 @@
 #include "terminal.h"
 #include "units_app.h"
 #include "web.h"
-
-#if __has_include("secrets.h")
-#include "secrets.h"
-#endif
+#include "wifi_setup.h"
 
 using namespace t5m;
 
@@ -84,7 +81,7 @@ TrackpadRenderer g_padDraw;
 Theme g_theme;
 
 // What this boot is running: the home screen or one app.
-enum class Running : uint8_t { Home, Keyboard, Terminal, Calculator, Units, T48 };
+enum class Running : uint8_t { Home, Keyboard, Terminal, Calculator, Units, T48, WiFi };
 Running g_running = Running::Home;
 
 bool g_jtagOnly = false;  // this boot keeps USB-C on USB-Serial-JTAG
@@ -330,10 +327,11 @@ bool g_otherAppRan = false;    // another app used USB-A or the radio this boot
 // (USB-C HID, Bluetooth) needs a restart to let go cleanly.
 void goHome() {
   if (g_running == Running::Home) return;
-  if (g_running == Running::Terminal || g_running == Running::Calculator || g_running == Running::Units) {
+  if (g_running == Running::Terminal || g_running == Running::Calculator || g_running == Running::Units ||
+      g_running == Running::WiFi) {
     if (g_running == Running::Terminal) terminalEnd();
     else if (g_running == Running::Calculator) calcEnd();
-    else unitsEnd();
+    else if (g_running == Running::Units) unitsEnd();
     g_running = Running::Home;
     drawHome();
     return;
@@ -485,18 +483,6 @@ void updateLeds(uint32_t now) {
   }
 }
 
-void wifiBegin() {
-  if (!g_settings.wifi) return;
-#ifdef WIFI_SSID
-  WiFi.mode(WIFI_STA);
-  // The default fast scan joins the first AP heard, not the strongest.
-  WiFi.setScanMethod(WIFI_ALL_CHANNEL_SCAN);
-  WiFi.setSortMethod(WIFI_CONNECT_AP_BY_SIGNAL);
-  WiFi.setAutoReconnect(true);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-#endif
-}
-
 void status(Print &out) {
   out.printf("multitool: mode %s, link %s, keyboard %s (fw %u)\n", modeName(g_mode), linkName(g_settings.link),
              g_kb.present() ? "present" : "absent", g_kb.firmware());
@@ -557,6 +543,8 @@ Rect tileRect(int i) {
   return {x0 + col * (w + gap), top + row * (h + gap), w, h};
 }
 
+Rect wifiButton() { return {kW - 8 - 130, 6, 130, kBarH - 12}; }
+
 void drawHome() {
   auto &d = M5.Display;
   d.startWrite();
@@ -566,9 +554,17 @@ void drawHome() {
   d.setTextDatum(textdatum_t::middle_left);
   d.setTextColor(g_theme.text);
   d.drawString("Tab5 Multitool", 24, kBarH / 2);
+  const Rect wb = wifiButton();
+  drawButton(wb, "Wi-Fi", false);
+  d.setFont(&fonts::DejaVu24);
   d.setTextDatum(textdatum_t::middle_right);
-  d.setTextColor(g_theme.textDim);
-  if (WiFi.status() == WL_CONNECTED) d.drawString(WiFi.localIP().toString().c_str(), kW - 24, kBarH / 2);
+  if (WiFi.status() == WL_CONNECTED) {
+    d.setTextColor(g_theme.textDim);
+    d.drawString(WiFi.localIP().toString().c_str(), wb.x - 20, kBarH / 2);
+  } else if (g_settings.wifi && !*wifiSsid()) {
+    d.setTextColor(kWarn);
+    d.drawString("No Wi-Fi network set up", wb.x - 20, kBarH / 2);
+  }
   for (int i = 0; i < kTileCount; i++) {
     const Rect r = tileRect(i);
     d.fillRoundRect(r.x, r.y, r.w, r.h, 24, kTiles[i].color);
@@ -617,10 +613,19 @@ void startApp(App a) {
   }
 }
 
+void openWifi() {
+  g_running = Running::WiFi;
+  wifiScreenBegin(g_kb, g_theme);
+}
+
 void homeLoop() {
   for (int i = 0; i < M5.Touch.getCount(); i++) {
     const auto &t = M5.Touch.getDetail(i);
     if (!t.wasClicked()) continue;
+    if (wifiButton().contains(t.x, t.y)) {
+      openWifi();
+      return;
+    }
     for (int k = 0; k < kTileCount; k++)
       if (tileRect(k).contains(t.x, t.y)) {
         startApp(kTiles[k].app);
@@ -665,9 +670,13 @@ void command(int ch) {
     }
     return;
   }
-  if (g_running == Running::Calculator || g_running == Running::Units) {
-    const bool calc = g_running == Running::Calculator;
-    auto type = [&](char c) { if (calc) calcType(c); else unitsType(c); };
+  if (g_running == Running::Calculator || g_running == Running::Units || g_running == Running::WiFi) {
+    const Running r = g_running;
+    auto type = [&](char c) {
+      if (r == Running::Calculator) calcType(c);
+      else if (r == Running::Units) unitsType(c);
+      else wifiScreenType(c);
+    };
     static int mode = 0;  // 'i' typing a line, '@' collecting tap coordinates
     static char tap[16];
     static int tapLen = 0;
@@ -679,8 +688,9 @@ void command(int ch) {
         tap[tapLen] = 0;
         int x = 0, y = 0;
         if (sscanf(tap, "%d,%d", &x, &y) == 2) {
-          if (calc) calcTap(x, y);
-          else unitsTap(x, y);
+          if (r == Running::Calculator) calcTap(x, y);
+          else if (r == Running::Units) unitsTap(x, y);
+          else wifiScreenTap(x, y);
         }
         mode = 0;
       } else if (tapLen < 15) {
@@ -696,7 +706,10 @@ void command(int ch) {
     } else if (ch == 'h') {
       goHome();
     } else if (ch == 's') {
-      out.printf("multitool: %s | heap %u psram %u\n", calc ? "calculator" : "units", (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getFreePsram());
+      out.printf("multitool: %s | wifi %s %s | heap %u psram %u\n",
+                 r == Running::Calculator ? "calculator" : r == Running::Units ? "units" : "wifi",
+                 WiFi.status() == WL_CONNECTED ? "up" : "down", WiFi.localIP().toString().c_str(),
+                 (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getFreePsram());
     }
     return;
   }
@@ -718,6 +731,7 @@ void command(int ch) {
     else if (ch == 'r') startApp(App::T48);
     else if (ch == 'c') startApp(App::Calculator);
     else if (ch == 'u') startApp(App::Units);
+    else if (ch == 'W') openWifi();
     else if (ch == 'P') screenshot(out);
     else if (ch == 's') out.printf("multitool: home screen, last app %s\n", appName(g_settings.app));
     return;
@@ -804,12 +818,10 @@ void startT48() {
   g_running = Running::T48;
   burner::host::Config hc;
   hc.home = [] { restartHome(); };
-#ifdef WIFI_SSID
-  if (g_settings.wifi) {
-    hc.wifi_ssid = WIFI_SSID;
-    hc.wifi_pass = WIFI_PASSWORD;
+  if (g_settings.wifi && *wifiSsid()) {
+    hc.wifi_ssid = wifiSsid();
+    hc.wifi_pass = wifiPass();
   }
-#endif
   burner::host::set(hc);
   burner::setup();
 }
@@ -818,6 +830,7 @@ void setup() {
   // Which app this boot is for comes first: the T48 app does all of its own
   // start-up (M5.begin included).
   loadSettings();
+  wifiLoad();
   const bool home = g_go_home == kGoHomeMagic;
   g_go_home = 0;
   const esp_reset_reason_t why = esp_reset_reason();
@@ -869,7 +882,7 @@ void setup() {
     }
   }
 #endif
-  wifiBegin();
+  wifiConnect();
   if (home || (g_safeBoot && g_settings.app == App::T48)) {
     g_running = Running::Home;
     drawHome();
@@ -894,6 +907,7 @@ void loop() {
     case Running::Terminal: terminalLoop(now); break;
     case Running::Calculator: calcLoop(now); break;
     case Running::Units: unitsLoop(now); break;
+    case Running::WiFi: wifiScreenLoop(now); break;
     case Running::T48: break;
   }
   if (g_homeRequested) {

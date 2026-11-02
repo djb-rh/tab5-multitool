@@ -4,3 +4,5 @@ firmware/include/secrets.h
 backup/
 test/build/
 swift/.build/
+dist/
+site/

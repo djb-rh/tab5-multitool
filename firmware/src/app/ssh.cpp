@@ -242,7 +242,7 @@ void session() {
     if (i == 5) setState(State::Connecting, "Waiting for Wi-Fi...");
     vTaskDelay(pdMS_TO_TICKS(100));
   }
-  if (WiFi.status() != WL_CONNECTED) return setState(State::Closed, "Wi-Fi is not connected.");
+  if (WiFi.status() != WL_CONNECTED) return setState(State::Closed, "Wi-Fi is not connected (set it up with the home screen's Wi-Fi button).");
   sockaddr_in addr;
   if (!resolve(g_host, g_port, &addr)) return setState(State::Closed, "Could not find %s.", g_host.c_str());
   if (!tcpConnect(addr)) return setState(State::Closed, "Could not connect to %s port %u.", g_host.c_str(), g_port);
