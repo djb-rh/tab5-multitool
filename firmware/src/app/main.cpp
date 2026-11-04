@@ -42,6 +42,7 @@
 #include "calc_app.h"
 #include "host.h"
 #include "macros.h"
+#include "formulas_app.h"
 #include "settings.h"
 #include "terminal.h"
 #include "units_app.h"
@@ -81,7 +82,7 @@ TrackpadRenderer g_padDraw;
 Theme g_theme;
 
 // What this boot is running: the home screen or one app.
-enum class Running : uint8_t { Home, Keyboard, Terminal, Calculator, Units, T48, WiFi };
+enum class Running : uint8_t { Home, Keyboard, Terminal, Calculator, Units, T48, WiFi, Formulas };
 Running g_running = Running::Home;
 
 bool g_jtagOnly = false;  // this boot keeps USB-C on USB-Serial-JTAG
@@ -328,10 +329,11 @@ bool g_otherAppRan = false;    // another app used USB-A or the radio this boot
 void goHome() {
   if (g_running == Running::Home) return;
   if (g_running == Running::Terminal || g_running == Running::Calculator || g_running == Running::Units ||
-      g_running == Running::WiFi) {
+      g_running == Running::WiFi || g_running == Running::Formulas) {
     if (g_running == Running::Terminal) terminalEnd();
     else if (g_running == Running::Calculator) calcEnd();
     else if (g_running == Running::Units) unitsEnd();
+    else if (g_running == Running::Formulas) formulasEnd();
     g_running = Running::Home;
     drawHome();
     return;
@@ -526,6 +528,7 @@ const Tile kTiles[] = {
     {App::Terminal, {"SwiftTerm over SSH", "or a USB serial adapter"}, 0x1A9E8A},
     {App::Calculator, {"RPN scientific, with stats,", "registers and HEX/OCT/BIN"}, 0xC77A22},
     {App::Units, {"Length, volume, temperature", "and 21 more kinds"}, 0x7B55C9},
+    {App::Formulas, {"Ohm's law to orbits: solve", "for any variable, any units"}, 0x2F8F4E},
     {App::T48, {"Program ROMs with an", "XGecu T48 or a One ROM"}, 0xB8433A},
 };
 constexpr int kTileCount = sizeof(kTiles) / sizeof(kTiles[0]);
@@ -595,6 +598,9 @@ void startApp(App a) {
   } else if (a == App::Units) {
     g_running = Running::Units;
     unitsBegin(g_kb, g_theme);
+  } else if (a == App::Formulas) {
+    g_running = Running::Formulas;
+    formulasBegin(g_kb, g_theme);
   } else if (a == App::Calculator) {
     g_running = Running::Calculator;
     calcBegin(g_kb, g_theme);
@@ -648,6 +654,13 @@ void homeLoop() {
 
 extern "C" int t5m_swift_probe(uint8_t *out, int cap);
 
+// Console testing: apps act as if the clip-on keyboard were absent, or back.
+void togglePretendAbsent() {
+  static bool absent = false;
+  absent = !absent;
+  g_kb.pretendAbsent(absent);
+}
+
 void command(int ch) {
   Print &out = console();
   // Terminal test hooks: 'f' then a line is shown as if the connection sent
@@ -670,11 +683,13 @@ void command(int ch) {
     }
     return;
   }
-  if (g_running == Running::Calculator || g_running == Running::Units || g_running == Running::WiFi) {
+  if (g_running == Running::Calculator || g_running == Running::Units || g_running == Running::WiFi ||
+      g_running == Running::Formulas) {
     const Running r = g_running;
     auto type = [&](char c) {
       if (r == Running::Calculator) calcType(c);
       else if (r == Running::Units) unitsType(c);
+      else if (r == Running::Formulas) formulasType(c);
       else wifiScreenType(c);
     };
     static int mode = 0;  // 'i' typing a line, '@' collecting tap coordinates
@@ -690,6 +705,7 @@ void command(int ch) {
         if (sscanf(tap, "%d,%d", &x, &y) == 2) {
           if (r == Running::Calculator) calcTap(x, y);
           else if (r == Running::Units) unitsTap(x, y);
+          else if (r == Running::Formulas) formulasTap(x, y);
           else wifiScreenTap(x, y);
         }
         mode = 0;
@@ -703,11 +719,15 @@ void command(int ch) {
       tapLen = 0;
     } else if (ch == 'P') {
       screenshot(out);
+    } else if (ch == 'g' && r == Running::Formulas) {
+      formulasGallery();
+    } else if (ch == 'K') {
+      togglePretendAbsent();
     } else if (ch == 'h') {
       goHome();
     } else if (ch == 's') {
       out.printf("multitool: %s | wifi %s %s | heap %u psram %u\n",
-                 r == Running::Calculator ? "calculator" : r == Running::Units ? "units" : "wifi",
+                 r == Running::Calculator ? "calculator" : r == Running::Units ? "units" : r == Running::Formulas ? "formulas" : "wifi",
                  WiFi.status() == WL_CONNECTED ? "up" : "down", WiFi.localIP().toString().c_str(),
                  (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getFreePsram());
     }
@@ -721,6 +741,10 @@ void command(int ch) {
     out.printf("swift: %s (%lu us)\n", (const char *)buf, (unsigned long)(micros() - t0));
     return;
   }
+  if (ch == 'K') {
+    togglePretendAbsent();
+    return;
+  }
   if (ch == 'h') {
     if (g_running != Running::Home) goHome();
     return;
@@ -731,6 +755,7 @@ void command(int ch) {
     else if (ch == 'r') startApp(App::T48);
     else if (ch == 'c') startApp(App::Calculator);
     else if (ch == 'u') startApp(App::Units);
+    else if (ch == 'f') startApp(App::Formulas);
     else if (ch == 'W') openWifi();
     else if (ch == 'P') screenshot(out);
     else if (ch == 's') out.printf("multitool: home screen, last app %s\n", appName(g_settings.app));
@@ -883,7 +908,8 @@ void setup() {
   }
 #endif
   wifiConnect();
-  if (home || (g_safeBoot && g_settings.app == App::T48)) {
+  // A first boot starts on the home screen too: there is no app to go back to.
+  if (home || !settingsFound() || (g_safeBoot && g_settings.app == App::T48)) {
     g_running = Running::Home;
     drawHome();
   } else {
@@ -908,6 +934,7 @@ void loop() {
     case Running::Calculator: calcLoop(now); break;
     case Running::Units: unitsLoop(now); break;
     case Running::WiFi: wifiScreenLoop(now); break;
+    case Running::Formulas: formulasLoop(now); break;
     case Running::T48: break;
   }
   if (g_homeRequested) {

@@ -9,6 +9,7 @@ apps on one home screen:
 | Terminal | [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm) (Embedded Swift) over SSH or a USB serial adapter |
 | Calculator | an HP-style RPN scientific calculator: stack, registers, statistics, HEX/OCT/BIN |
 | Units | unit conversion, 24 kinds; type "5 ft 3 in to cm" or "100 F in C" |
+| Formulas | 207 formulas in 15 groups, from Ohm's law to orbits: fill in what you know, solve for any variable, with diagrams, unit help and conversions |
 | T48 + One ROM | [T48 for Tab5](https://github.com/djb-rh/t48-for-tab5): program ROMs with an XGecu T48 or a One ROM |
 
 ![The home screen](docs/shots/home.png)
@@ -25,7 +26,7 @@ sketches can use any part of it.
 T48 for Tab5, which is GPL-3.0-or-later (it contains minipro), so the
 firmware as built here, with it linked in, is distributed under GPL-3.0-or-later.
 
-**Status: early (v0.1).** Everything here runs on a Tab5; see NOTES.md for what has been checked.
+**Status: early (v0.2).** Everything here runs on a Tab5; see NOTES.md for what has been checked.
 See [NOTES.md](NOTES.md) and [PLAN.md](PLAN.md).
 
 ## Library
@@ -107,7 +108,8 @@ tools/flash.py app --wait
 `flash.py` gets the Tab5 back onto USB-Serial-JTAG first, whatever it is doing.
 `tools/shot.py out.png` saves a screenshot over the console. On the Mac,
 `test/run.sh` tests the macro parser, `test/rpn_test.sh` the calculator,
-`test/units_test.sh` the unit tables and parser, `test/term_test.sh` SwiftTerm.
+`test/units_test.sh` the unit tables and parser, `test/formulas_test.sh` the
+formula library and solver, `test/term_test.sh` SwiftTerm.
 
 The T48 app is built from the `third_party/t48-for-tab5` submodule
 (`firmware/lib/t48`), which has its own minipro submodule, so clone with

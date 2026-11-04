@@ -28,7 +28,9 @@ class Tab5Keyboard {
   // Call often from loop(); reads queued key events while the INT line says
   // there are some, and probes for the keyboard while it is absent.
   void tick();
-  bool present() const { return present_; }
+  bool present() const { return present_ && !pretendAbsent_; }
+  // Testing: apps act as if it were unclipped (keys still arrive).
+  void pretendAbsent(bool absent) { pretendAbsent_ = absent; }
   uint8_t firmware() const { return firmware_; }
 
   // The next key event, if any. Sym never produces one (it is a layer key).
@@ -56,7 +58,7 @@ class Tab5Keyboard {
   void push(const KeyEvent &e);
   void applyLeds();
 
-  bool bus_ = false, present_ = false;
+  bool bus_ = false, present_ = false, pretendAbsent_ = false;
   uint8_t firmware_ = 0;
   uint32_t next_probe_ = 0, next_check_ = 0, next_poll_ = 0;
   uint16_t held_[5] = {};

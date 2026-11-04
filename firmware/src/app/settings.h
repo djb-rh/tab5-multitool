@@ -9,7 +9,7 @@ namespace mt {
 enum class Link : uint8_t { Usb, Ble, Both };
 enum class Mode : uint8_t { Keyboard, KeyboardMouse, Mouse, PadNumpad, Macros, kCount };
 // Apps on the home screen. The one in use is remembered and opens at boot.
-enum class App : uint8_t { Keyboard, Terminal, Calculator, Units, T48, kCount };
+enum class App : uint8_t { Keyboard, Terminal, Calculator, Units, T48, Formulas, kCount };
 
 struct Settings {
   App app = App::Keyboard;
@@ -28,6 +28,8 @@ struct Settings {
 
 extern Settings g_settings;
 void loadSettings();
+// False on a first boot: nothing has been saved yet.
+bool settingsFound();
 // Marks the settings changed; they are saved a few seconds later from loop().
 void settingsChanged();
 void settingsTick(uint32_t now);

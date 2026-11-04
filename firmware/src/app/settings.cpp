@@ -9,6 +9,7 @@ Settings g_settings;
 
 namespace {
 bool g_dirty = false;
+bool g_found = false;
 uint32_t g_changed_at = 0;
 constexpr uint32_t kSaveDelayMs = 3000;
 }  // namespace
@@ -16,6 +17,7 @@ constexpr uint32_t kSaveDelayMs = 3000;
 void loadSettings() {
   Preferences p;
   if (!p.begin("multitool", true)) return;
+  g_found = true;
   Settings &s = g_settings;
   s.app = (App)p.getUChar("app", (uint8_t)s.app);
   if (s.app >= App::kCount) s.app = App::Keyboard;
@@ -36,6 +38,8 @@ void loadSettings() {
   if ((uint8_t)s.keyboardMode >= (uint8_t)Mode::kCount) s.keyboardMode = Mode::PadNumpad;
   if ((uint8_t)s.link > (uint8_t)Link::Both) s.link = Link::Usb;
 }
+
+bool settingsFound() { return g_found; }
 
 void settingsChanged() {
   g_dirty = true;
@@ -91,6 +95,7 @@ const char *appName(App a) {
     case App::Calculator: return "Calculator";
     case App::Units: return "Units";
     case App::T48: return "T48 + One ROM";
+    case App::Formulas: return "Formulas";
     default: return "?";
   }
 }

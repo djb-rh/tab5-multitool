@@ -2,6 +2,34 @@
 
 Newest first. PLAN.md is the plan; this is what was actually found.
 
+## 2026-11-04: Formulas app
+- formulas.h is the contract. formulas.cpp: dimensions, parser, tree inversion,
+  numeric fallback, Sheet (blank rows are solved; more entered than `needed`
+  drops the oldest). formula_lib_*.cpp + formula_diagrams.h: 207 formulas, 15
+  groups, 152 drawings. test/formulas_test.sh enters every subset of `needed`
+  values for every formula and checks the rest come back, and checks each
+  equation's dimensions. Allowlisted degenerate subsets are commented there.
+- formulas_app.cpp: browse + sheet, one 1.8 MB PSRAM full-screen sprite, freed on
+  leaving. It typesets from the same trees the solver uses. The = button swaps
+  roles: a solved row takes the entered row's place as an input.
+- JP gothic font: only sizes 16, 24, 28. Linking every size pushed the firmware
+  to 6.9 MB, over the 6 MB slot. Now 5.2 MB.
+- First boot (no saved settings) now starts on the home screen, not the Keyboard
+  app, so a fresh install doesn't grab USB-C.
+- Console in Formulas: g = next page of all drawings. K, in any app or at home,
+  acts as if the clip-on keyboard were absent (Tab5Keyboard::pretendAbsent).
+- T48 on-screen keys (ui.cpp in T48 for Tab5; `nokb 1` on its console fakes no
+  keyboard): chip search, One ROM type search, every prompt and hex bytes. Files
+  got Read me and Delete buttons and One ROM slots a Remove button, for touch.
+  Checked on the Tab5 with no SD card, through temporary hooks not committed: type
+  search, prompt, hex bytes, Hide, Sym. Not checked: the real chip list, real file
+  or slot deletion. Units pad tapped; Terminal and Wi-Fi keyboards seen on screen
+  but the console can't tap them (they are the Keyboard app's Keypad).
+- Tested on the BarSense Hub Tab5 (USB serial ends D7:E9), reflashed for this;
+  its whole flash is in backup/barsense-hub-20261104.bin. Restore with esptool
+  write-flash 0. 4 of 13 drawing pages looked at on the device, the rest only as the
+  test's script checks and a host render.
+
 ## 2026-11-02 (later): Wi-Fi screen, public repo, web installer
 - Public at github.com/djb-rh/tab5-multitool (MAC and LAN IP scrubbed from NOTES
   before the first push). Web installer: tools/release.sh -> site/ on gh-pages.
