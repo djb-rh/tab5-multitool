@@ -2,6 +2,22 @@
 
 Newest first. PLAN.md is the plan; this is what was actually found.
 
+## 2026-11-04 (later): screen blanking, battery badge
+- battery.cpp: one badge (icon, percent, bolt while charging, red at 15 % or less)
+  in every app's top bar. Apps call batteryDraw() from their bar; batteryTick()
+  reads every 5 s and repaints at the last position, so apps need no refresh code.
+  The level is voltage-based, so it is smoothed. T48 keeps its own header text.
+- Blanking: Setup > "Blank screen after" (never, 1-60 min, default 5). Backlight
+  only; apps keep running. M5.update() is held back from dark until the waking
+  finger lifts, so the wake tap presses nothing; the panel is polled directly
+  meanwhile. A waking key is dropped, except in Keyboard & Mouse (goes to the host).
+- T48: the launcher passes host::Config::blank_ms; a job in progress holds it off.
+  Standalone T48 for Tab5 sets nothing, so it never blanks.
+- Console: Ctrl-B blanks or wakes, Ctrl-T steps the time (T48: `blank [0|1]`).
+- Checked on the Tab5: timeout at 1 min in Calculator and T48, staying dark, badge
+  in all apps, Setup row. NOT checked: waking by a real finger or key, the badge
+  below 100 % (it was on USB power), a T48 job holding blanking off.
+
 ## 2026-11-04: Formulas app
 - formulas.h is the contract. formulas.cpp: dimensions, parser, tree inversion,
   numeric fallback, Sheet (blank rows are solved; more entered than `needed`

@@ -29,6 +29,7 @@
 // Console (USB CDC port while USB HID runs, else USB-Serial-JTAG):
 //   s status   m next mode   1-5 pick a mode   j restart into USB-Serial-JTAG
 //   P screenshot (raw RGB565 between "SHOT w h" and "END"; tools/shot.py)
+//   Ctrl-B blank or wake the screen   Ctrl-T next blanking time (any app but T48)
 //   > next macro page   S open/close Setup   h home
 //   k / t / c / u / r   open Keyboard / Terminal / Calculator / Units / T48 from home
 // Calculator, Units: i<line> types the line (its end as Enter), @x,y<newline> taps.
@@ -38,6 +39,7 @@
 #include <WiFi.h>
 #include <esp_attr.h>
 
+#include "battery.h"
 #include "burner.h"
 #include "calc_app.h"
 #include "host.h"
@@ -191,10 +193,9 @@ struct BarState {
   bool settings = false;
   bool usb = false, usbRun = false, ble = false, bleRun = false, wifi = false, kb = false;
   uint8_t leds = 0xFF;
-  int battery = -1;
   bool operator==(const BarState &o) const {
     return mode == o.mode && settings == o.settings && usb == o.usb && usbRun == o.usbRun && ble == o.ble &&
-           bleRun == o.bleRun && wifi == o.wifi && kb == o.kb && leds == o.leds && battery == o.battery;
+           bleRun == o.bleRun && wifi == o.wifi && kb == o.kb && leds == o.leds;
   }
 };
 BarState g_bar;
@@ -210,7 +211,6 @@ void drawBar(bool force) {
   s.wifi = WiFi.status() == WL_CONNECTED;
   s.kb = g_kb.present();
   s.leds = g_out.leds();
-  s.battery = M5.Power.getBatteryLevel();
   if (!force && s == g_bar) return;
   g_bar = s;
 
@@ -231,6 +231,8 @@ void drawBar(bool force) {
 
   // Indicators, right to left before the settings button.
   int x = settingsButton().x - 16;
+  batteryDraw(d, x);
+  x -= kBatteryW + 18;
   d.setFont(&fonts::DejaVu18);
   d.setTextDatum(textdatum_t::middle_right);
   const int leftmost = g_settingsOpen ? 200 : modeButton(kModeButtonCount - 1).x + kModeBtnW + 12;
@@ -240,9 +242,6 @@ void drawBar(bool force) {
     d.drawString(label, x, kBarH / 2);
     x -= d.textWidth(label) + 18;
   };
-  char batt[12];
-  snprintf(batt, sizeof batt, "%d%%", s.battery);
-  ind(batt, s.battery >= 0, true);
   ind("WiFi", g_settings.wifi, s.wifi);
   ind("BT", s.bleRun, s.ble);
   ind(g_jtagOnly ? "USB:serial" : "USB", s.usbRun || g_jtagOnly, s.usb);
@@ -261,11 +260,11 @@ struct Row {
 const Row kRows[] = {
     {"Connection (restarts)", 0}, {"Pointer speed", 1},       {"Natural scrolling", 0},
     {"Tap to click", 0},          {"Keyboard LED brightness", 1}, {"Screen brightness", 1},
-    {"Wi-Fi", 0},                 {"Macro web editor", 0},
+    {"Blank screen after", 0},    {"Wi-Fi", 0},               {"Macro web editor", 0},
     {"Forget Bluetooth hosts (new identity, restarts)", 2},  {"Firmware update mode (USB serial)", 2},
 };
 constexpr int kRowCount = sizeof(kRows) / sizeof(kRows[0]);
-constexpr int kRowH = 64;
+constexpr int kRowH = 58;
 Link g_linkAtOpen = Link::Usb;
 
 void rowValue(int i, char *buf, size_t n) {
@@ -277,8 +276,12 @@ void rowValue(int i, char *buf, size_t n) {
     case 3: snprintf(buf, n, "%s", s.tapToClick ? "on" : "off"); break;
     case 4: snprintf(buf, n, "%u%%", s.ledBrightness); break;
     case 5: snprintf(buf, n, "%u", s.screenBrightness); break;
-    case 6: snprintf(buf, n, "%s", s.wifi ? "on" : "off"); break;
-    case 7:
+    case 6:
+      if (s.blankMinutes) snprintf(buf, n, "%u min", s.blankMinutes);
+      else snprintf(buf, n, "never");
+      break;
+    case 7: snprintf(buf, n, "%s", s.wifi ? "on" : "off"); break;
+    case 8:
       if (!s.webEditor) snprintf(buf, n, "off");
       else if (webRunning()) snprintf(buf, n, "http://%s/", WiFi.localIP().toString().c_str());
       else snprintf(buf, n, "on (waiting for Wi-Fi)");
@@ -348,6 +351,16 @@ void restartHome() {
   esp_restart();
 }
 
+// The choices for blanking, in minutes, then back to never.
+void nextBlankTime() {
+  static const uint8_t kSteps[] = {1, 2, 5, 10, 15, 30, 60};
+  uint8_t next = 0;
+  for (uint8_t m : kSteps)
+    if (m > g_settings.blankMinutes) { next = m; break; }
+  g_settings.blankMinutes = next;
+  settingsChanged();
+}
+
 void settingsTap(int x, int y) {
   const int i = (y - kBarH - 10) / kRowH;
   if (i < 0 || i >= kRowCount) return;
@@ -364,9 +377,10 @@ void settingsTap(int x, int y) {
     case 3: s.tapToClick = !s.tapToClick; applyPadSettings(); break;
     case 4: adj(s.ledBrightness, s.ledBrightness < 10 ? 1 : 5, 0, 100); g_kb.setLedBrightness(s.ledBrightness); break;
     case 5: adj(s.screenBrightness, 16, 16, 255); M5.Display.setBrightness(s.screenBrightness); break;
-    case 6: s.wifi = !s.wifi; break;
-    case 7: s.webEditor = !s.webEditor; if (s.webEditor) webBegin(); break;
-    case 8:
+    case 6: nextBlankTime(); break;
+    case 7: s.wifi = !s.wifi; break;
+    case 8: s.webEditor = !s.webEditor; if (s.webEditor) webBegin(); break;
+    case 9:
       // Forget hosts here, and become a new device to them (see BleHidConfig::identity).
       if (g_ble.running()) g_ble.forgetHosts();
       s.bleIdentity = s.bleIdentity == 255 ? 1 : s.bleIdentity + 1;
@@ -375,7 +389,7 @@ void settingsTap(int x, int y) {
       delay(50);
       esp_restart();
       break;
-    case 9: restartToJtag(); break;
+    case 10: restartToJtag(); break;
   }
   settingsChanged();
   drawSettings();
@@ -563,11 +577,12 @@ void drawHome() {
   d.setTextDatum(textdatum_t::middle_right);
   if (WiFi.status() == WL_CONNECTED) {
     d.setTextColor(g_theme.textDim);
-    d.drawString(WiFi.localIP().toString().c_str(), wb.x - 20, kBarH / 2);
+    d.drawString(WiFi.localIP().toString().c_str(), wb.x - 36 - kBatteryW, kBarH / 2);
   } else if (g_settings.wifi && !*wifiSsid()) {
     d.setTextColor(kWarn);
-    d.drawString("No Wi-Fi network set up", wb.x - 20, kBarH / 2);
+    d.drawString("No Wi-Fi network set up", wb.x - 36 - kBatteryW, kBarH / 2);
   }
+  batteryDraw(d, wb.x - 16);
   for (int i = 0; i < kTileCount; i++) {
     const Rect r = tileRect(i);
     d.fillRoundRect(r.x, r.y, r.w, r.h, 24, kTiles[i].color);
@@ -652,6 +667,62 @@ void homeLoop() {
   }
 }
 
+// ---------------------------------------------------------- screen blanking --
+
+// After blankMinutes without a touch or key the backlight goes off. The app
+// keeps running (an SSH session stays up, keys still reach a USB host).
+// M5.update() is held back from when the screen goes dark until the waking
+// finger lifts, so the app never sees that tap: it can't press whatever was
+// under it. A waking key is dropped too, except in Keyboard & Mouse, where keys
+// belong to the host and the screen doesn't matter to them.
+bool g_blanked = false;
+bool g_wakeFinger = false;  // the finger that woke the screen is still down
+uint32_t g_lastInput = 0, g_seenKeys = 0, g_touchPolled = 0;
+constexpr uint32_t kTouchPollMs = 40;
+
+void blankScreen(bool on) {
+  g_blanked = on;
+  g_lastInput = millis();
+  M5.Display.setBrightness(on ? 0 : g_settings.screenBrightness);
+}
+
+// M5.Touch isn't updating while blanked, so this asks the panel directly.
+// False when it's too soon to ask again.
+bool pollFinger(uint32_t now, bool *down) {
+  if (now - g_touchPolled < kTouchPollMs) return false;
+  g_touchPolled = now;
+  lgfx::touch_point_t tp;
+  *down = M5.Display.getTouchRaw(&tp, 1) > 0;
+  return true;
+}
+
+// Once per loop, after the keyboard is read. False: hold M5.update() back.
+bool screenTick(uint32_t now) {
+  const uint32_t keys = g_kb.eventCount();
+  const bool typed = keys != g_seenKeys;
+  g_seenKeys = keys;
+  bool down = false;
+  if (g_blanked) {
+    if (typed) {
+      blankScreen(false);
+      if (g_running != Running::Keyboard) g_kb.flush();
+      return true;
+    }
+    if (pollFinger(now, &down) && down) {
+      blankScreen(false);
+      g_wakeFinger = true;
+    }
+    return false;
+  }
+  if (g_wakeFinger) {
+    if (pollFinger(now, &down) && !down) g_wakeFinger = false;
+    return !g_wakeFinger;
+  }
+  if (typed || M5.Touch.getCount()) g_lastInput = now;
+  if (g_settings.blankMinutes && now - g_lastInput >= g_settings.blankMinutes * 60000u) blankScreen(true);
+  return !g_blanked;
+}
+
 extern "C" int t5m_swift_probe(uint8_t *out, int cap);
 
 // Console testing: apps act as if the clip-on keyboard were absent, or back.
@@ -663,6 +734,13 @@ void togglePretendAbsent() {
 
 void command(int ch) {
   Print &out = console();
+  if (ch == 2 || ch == 20) {  // Ctrl-B, Ctrl-T: control characters, never part of a typed test line
+    if (ch == 2) blankScreen(!g_blanked);
+    else nextBlankTime();
+    out.printf("blank: %s, after %u min, backlight %u\n", g_blanked ? "dark" : "lit", g_settings.blankMinutes,
+               M5.Display.getBrightness());
+    return;
+  }
   // Terminal test hooks: 'f' then a line is shown as if the connection sent
   // it; 'i' then a line is typed (the line's end as Enter). A line being
   // collected takes every character, so typed text can't trigger commands.
@@ -847,6 +925,7 @@ void startT48() {
     hc.wifi_ssid = wifiSsid();
     hc.wifi_pass = wifiPass();
   }
+  hc.blank_ms = g_settings.blankMinutes * 60000u;
   burner::host::set(hc);
   burner::setup();
 }
@@ -925,8 +1004,8 @@ void loop() {
     burner::loop();
     return;
   }
-  M5.update();
   g_kb.tick();
+  if (screenTick(now)) M5.update();
   switch (g_running) {
     case Running::Home: homeLoop(); break;
     case Running::Keyboard: keyboardLoop(now); break;
@@ -943,6 +1022,7 @@ void loop() {
   }
   webTick();
   settingsTick(now);
+  batteryTick(now);
 
   static bool greeted = false;
   if (g_usb.running() && g_usb.console().open() && !greeted) {

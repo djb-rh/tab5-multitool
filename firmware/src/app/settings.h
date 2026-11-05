@@ -23,6 +23,7 @@ struct Settings {
   bool wifi = true;
   bool webEditor = true;                 // macro editor at http://<ip>/
   uint8_t screenBrightness = 160;
+  uint8_t blankMinutes = 5;  // backlight off after this long idle; 0 = never
   uint8_t bleIdentity = 1;  // see BleHidConfig::identity; Forget steps it
 };
 

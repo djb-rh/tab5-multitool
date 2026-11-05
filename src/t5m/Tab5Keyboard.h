@@ -35,6 +35,10 @@ class Tab5Keyboard {
 
   // The next key event, if any. Sym never produces one (it is a layer key).
   bool next(KeyEvent *out);
+  // Drops the events waiting for next().
+  void flush() { tail_ = head_; }
+  // Counts every key event so far: a change means a key moved.
+  uint32_t eventCount() const { return events_; }
   // Local key events the Sym layer reserves for the app (not for the host):
   // Sym+Esc. They arrive through next() with usage = kAppKey.
   static constexpr uint8_t kAppKey = 0xF0;
@@ -70,6 +74,7 @@ class Tab5Keyboard {
   static constexpr int kQueue = 32;
   KeyEvent queue_[kQueue];
   int head_ = 0, tail_ = 0;
+  uint32_t events_ = 0;
   uint8_t leds_[2][3] = {};
   uint8_t led_brightness_ = 3;
   bool leds_dirty_ = true;

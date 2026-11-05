@@ -13,6 +13,7 @@
 // Keys: Tab swaps, Up/Down change the kind, Esc clears.
 //
 // The kind, each kind's units and the typed text are kept in NVS ("units").
+#include "battery.h"
 #include "units_app.h"
 
 #include <M5Unified.h>
@@ -451,7 +452,8 @@ void drawBar() {
   d.setTextColor(kFaint);
   d.setFont(&fonts::DejaVu18);
   d.drawString(g_kbPresent ? "type \"100 F to C\" or \"5 ft 3 in mm\"   Tab swaps   Up/Down kind" :
-                             "tap a unit to change it", kW - 24, kBarH / 2);
+                             "tap a unit to change it", kW - 40 - kBatteryW, kBarH / 2);
+  batteryDraw(d, kW - 16);
   d.endWrite();
 }
 

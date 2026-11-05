@@ -200,6 +200,7 @@ void Tab5Keyboard::handle(int row, int col, bool down) {
 }
 
 void Tab5Keyboard::push(const KeyEvent &e) {
+  events_++;
   const int next = (head_ + 1) % kQueue;
   if (next == tail_) return;
   queue_[head_] = e;

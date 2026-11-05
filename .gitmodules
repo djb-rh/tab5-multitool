@@ -7,4 +7,4 @@
 [submodule "third_party/t48-for-tab5"]
 	path = third_party/t48-for-tab5
 	url = https://github.com/djb-rh/t48-for-tab5.git
-	branch = launcher-app
+	branch = main

@@ -12,6 +12,7 @@
 // (user@host[:port], or the number of a recent one), whether to trust a new
 // host key, and the password if this Tab5's key isn't accepted. Enter ~ .
 // disconnects. Host keys are remembered, and a changed one is refused.
+#include "battery.h"
 #include "terminal.h"
 
 #include <M5Unified.h>
@@ -268,8 +269,9 @@ void drawBar() {
   if (right[0] && !g_setupOpen) {
     d.setTextDatum(textdatum_t::middle_right);
     d.setTextColor(kDim);
-    d.drawString(right, su.x - 24, kBarH / 2);
+    d.drawString(right, su.x - 36 - kBatteryW, kBarH / 2);
   }
+  batteryDraw(d, su.x - 16);
   d.endWrite();
 }
 

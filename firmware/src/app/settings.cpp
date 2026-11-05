@@ -32,6 +32,7 @@ void loadSettings() {
   s.wifi = p.getBool("wifi", s.wifi);
   s.webEditor = p.getBool("web", s.webEditor);
   s.screenBrightness = p.getUChar("bright", s.screenBrightness);
+  s.blankMinutes = p.getUChar("blank", s.blankMinutes);
   s.bleIdentity = p.getUChar("bleid", s.bleIdentity);
   p.end();
   if ((uint8_t)s.touchMode >= (uint8_t)Mode::kCount) s.touchMode = Mode::KeyboardMouse;
@@ -64,6 +65,7 @@ void settingsTick(uint32_t now) {
   p.putBool("wifi", s.wifi);
   p.putBool("web", s.webEditor);
   p.putUChar("bright", s.screenBrightness);
+  p.putUChar("blank", s.blankMinutes);
   p.putUChar("bleid", s.bleIdentity);
   p.end();
 }

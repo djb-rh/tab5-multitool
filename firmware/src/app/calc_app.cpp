@@ -14,6 +14,7 @@
 //
 // The stack, registers and modes are kept in NVS ("calc"), saved a few seconds
 // after they change and when leaving.
+#include "battery.h"
 #include "calc_app.h"
 
 #include <M5Unified.h>
@@ -316,7 +317,8 @@ void drawBar(bool force) {
   d.drawString("Calculator", h.x + h.w + 24, kBarH / 2);
   d.setTextDatum(textdatum_t::middle_right);
   d.setTextColor(kAccent);
-  d.drawString(m.c_str(), kW - 24, kBarH / 2);
+  d.drawString(m.c_str(), kW - 40 - kBatteryW, kBarH / 2);
+  batteryDraw(d, kW - 16);
   d.endWrite();
 }
 

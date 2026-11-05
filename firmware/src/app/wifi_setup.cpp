@@ -1,3 +1,4 @@
+#include "battery.h"
 #include "wifi_setup.h"
 
 #include <M5Unified.h>
@@ -213,6 +214,7 @@ void drawAll() {
   d.setTextDatum(textdatum_t::middle_left);
   d.setTextColor(g_theme->text);
   d.drawString("Wi-Fi", 124, kBarH / 2);
+  batteryDraw(d, kW - 16);
   button(kScanBtn, g_scanning ? "..." : "Scan");
   button(kForgetBtn, "Forget");
   button(kPowerBtn, g_settings.wifi ? "Wi-Fi: on" : "Wi-Fi: off", g_settings.wifi);

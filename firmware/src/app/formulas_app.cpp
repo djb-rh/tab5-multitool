@@ -17,6 +17,7 @@
 //
 // Everything is drawn into one full-screen sprite and pushed when something changes.
 // Favourites and recent formulas are kept in NVS ("formulas").
+#include "battery.h"
 #include "formulas_app.h"
 
 #include <M5Unified.h>
@@ -771,7 +772,8 @@ void drawBrowse() {
   else text((g_query + "_").c_str(), s.x + 16, s.y + s.h / 2, 24, kWhite);
   char count[24];
   snprintf(count, sizeof count, "%d", g_listCount);
-  text(count, kW - 24, kBarH / 2, 18, kDim, textdatum_t::middle_right);
+  text(count, kW - 40 - kBatteryW, kBarH / 2, 18, kDim, textdatum_t::middle_right);
+  batteryDraw(g, kW - 16);
 
   drawRail();
   const int top = listTop(), bottom = listBottom();
@@ -1155,8 +1157,9 @@ void drawSheet() {
   g.fillRoundRect(b.x, b.y, b.w, b.h, 10, g_theme->key);
   text("Back", b.x + b.w / 2, b.y + b.h / 2, 24, kWhite, textdatum_t::middle_center);
   g.fillCircle(124, kBarH / 2, 8, accent);
-  text(fit(g_f->name, 24, 880).c_str(), 142, kBarH / 2, 24, kWhite);
   const Rect st = starRect(), cl = clearRect();
+  batteryDraw(g, st.x - 12);
+  text(fit(g_f->name, 24, st.x - 36 - kBatteryW - 142).c_str(), 142, kBarH / 2, 24, kWhite);
   const bool fav = isFav(g_f->id);
   g.fillRoundRect(st.x, st.y, st.w, st.h, 10, fav ? 0x5A4A1C : g_theme->key);
   g.fillCircle(st.x + st.w / 2, st.y + st.h / 2, 9, fav ? kStar : kFaint);
