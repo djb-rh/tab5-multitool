@@ -1,0 +1,12 @@
+{
+  "name": "Tab5 Multitool",
+  "version": "v0.2.1",
+  "new_install_prompt_erase": true,
+  "new_install_improv_wait_time": 0,
+  "builds": [
+    {
+      "chipFamily": "ESP32-P4",
+      "parts": [{ "path": "tab5-multitool-v0.2.1.bin", "offset": 0 }]
+    }
+  ]
+}

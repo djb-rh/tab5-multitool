@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tab5 Multitool installer</title>
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#e6edf3;--dim:#8b949e;--accent:#2f81f7}
+@media (prefers-color-scheme:light){:root{--bg:#f6f8fa;--panel:#fff;--border:#d0d7de;--text:#1f2328;--dim:#59636e;--accent:#0969da}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 48px}h1{margin:0 0 4px;font-size:28px}h2{font-size:19px;margin:28px 0 8px}
+p,li{color:var(--dim)}b,strong{color:var(--text)}a{color:var(--accent)}img{width:100%;border-radius:10px;border:1px solid var(--border);margin:14px 0}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin:18px 0}
+ol,ul{padding-left:22px}li{margin:6px 0}code{background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--text)}
+button.install{background:#2f81f7;color:#fff;border:0;border-radius:8px;padding:12px 22px;font:600 17px system-ui,sans-serif;cursor:pointer;margin:8px 0 4px}
+button.install:hover{filter:brightness(1.1)}
+</style></head><body><main>
+<h1>Tab5 Multitool</h1>
+<p>Firmware v0.2.1 for the M5Stack Tab5: a home screen of apps. Every app works by touch; the Tab5 Keyboard is optional.
+Source, docs and licences on <a href="https://github.com/djb-rh/tab5-multitool">GitHub</a>.</p>
+<img src="home.png" alt="The home screen">
+<ul>
+<li><b>Keyboard &amp; Mouse</b>: a USB and Bluetooth keyboard, trackpad and macro pad for a computer.</li>
+<li><b>Terminal</b>: an SSH terminal (SwiftTerm), or a terminal on a USB serial adapter.</li>
+<li><b>Calculator</b>: an RPN scientific calculator with statistics, registers and HEX/OCT/BIN.</li>
+<li><b>Units</b>: 24 kinds of unit; type things like <code>100 F in C</code> or <code>5 ft 3 in to cm</code>.</li>
+<li><b>Formulas</b>: 207 formulas in 15 groups, from Ohm's law to orbits. Fill in what you know, solve for any variable, with diagrams, unit help and conversions.</li>
+<li><b>T48 + One ROM</b>: program ROMs with an XGecu T48 or a One ROM
+(<a href="https://github.com/djb-rh/t48-for-tab5">T48 for Tab5</a>).</li>
+</ul>
+
+<h2>1. Install the firmware</h2>
+<div class="box">
+<ol>
+<li>Use <b>Chrome or Edge on a desktop</b> (Web Serial is needed; Safari and Firefox do not have it).</li>
+<li>Connect the Tab5's <b>USB-C</b> port to the computer and switch the Tab5 on.</li>
+<li>Click <b>Install</b> below and choose the Tab5's port (it is usually called <b>USB JTAG/serial debug unit</b>).</li>
+</ol>
+<esp-web-install-button manifest="manifest.json">
+<button slot="activate" class="install">Install Tab5 Multitool v0.2.1</button>
+<span slot="unsupported"><b>This browser cannot flash devices.</b> Use Chrome or Edge on a desktop computer.</span>
+<span slot="not-allowed"><b>The page must be opened over https.</b></span>
+</esp-web-install-button>
+<p>If no port shows up or the install fails: hold the Tab5's power button to put it in download mode, then try again.
+Installing replaces whatever firmware the Tab5 had.</p>
+</div>
+
+<h2>2. Join Wi-Fi</h2>
+<div class="box"><ol>
+<li>On the home screen, tap <b>Wi-Fi</b> at the top right. The Tab5 lists the networks it can hear.</li>
+<li>Tap yours and type its password, on the clip-on keyboard or the on-screen one, then <b>Join</b>.
+For a hidden network, tap <b>Other network</b> and type its name first.</li>
+</ol>
+<p>The Terminal needs Wi-Fi for SSH, and the macro pad's web editor is served over it. T48 uses the same network.</p>
+</div>
+
+<h2>3. T48 + One ROM (optional)</h2>
+<div class="box"><ol>
+<li>Download <a href="https://github.com/djb-rh/tab5-multitool/releases/latest">the SD card zip</a> from the latest release
+(<code>tab5-multitool-sdcard-v0.2.1.zip</code>).</li>
+<li>Format a microSD card as <b>FAT32</b> (the Tab5 cannot read exFAT; cards over 32 GB usually come as exFAT).</li>
+<li>Unzip it onto the card so the card has a <code>burner</code> folder at its top level, and put the card in the Tab5.</li>
+<li>Plug the T48 (or a One ROM) into the Tab5's <b>USB-A</b> port and open <b>T48 + One ROM</b>.
+<a href="https://github.com/djb-rh/t48-for-tab5#readme">Its own README</a> covers the rest.</li>
+</ol></div>
+
+<h2>Updating later</h2>
+<div class="box">
+<p><b>Keyboard &amp; Mouse</b> takes over the USB-C port, so the installer can't reach the Tab5 while it runs.
+Tap <b>Home</b> first (or, in Keyboard &amp; Mouse, <b>Setup</b> then <b>Firmware update mode</b>), then install as above.
+Your settings, saved Wi-Fi network and macros stay unless you choose to erase the device.</p>
+<p>The firmware is GPL-3.0-or-later because it includes T48 for Tab5 and minipro; the Multitool's own code is MIT.</p>
+</div>
+</main></body></html>
